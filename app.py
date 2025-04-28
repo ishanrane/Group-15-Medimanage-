@@ -30,14 +30,14 @@ if "current_page" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Excel database files
+
 USERS_DB = "users_db.xlsx"
 MEDICINES_DB = "medicines_db.xlsx"
 ORDERS_DB = "orders_db.xlsx"
 
-# Ensure Excel database files exist
+
 def initialize_excel_databases():
-    # Create users database if not exists
+
     if not os.path.exists(USERS_DB):
         users_df = pd.DataFrame({
             "username": ["user1", "user2", "admin"],
@@ -45,7 +45,7 @@ def initialize_excel_databases():
         })
         users_df.to_excel(USERS_DB, index=False)
     
-    # Create medicines database if not exists
+
     if not os.path.exists(MEDICINES_DB):
         medicines = pd.DataFrame({
             "id": range(1, 21),
@@ -91,7 +91,7 @@ def initialize_excel_databases():
         })
         medicines.to_excel(MEDICINES_DB, index=False)
     
-    # Create orders database if not exists
+
     if not os.path.exists(ORDERS_DB):
         orders_df = pd.DataFrame(columns=[
             "order_id", "username", "date", "items", "total", 
@@ -134,7 +134,7 @@ def load_orders(username=None):
 def save_order(order_data):
     orders_df = load_orders()
     
-    # Convert items list to string representation
+
     items_str = str(order_data["items"])
     
     new_order = pd.DataFrame({
@@ -151,17 +151,17 @@ def save_order(order_data):
     orders_df = pd.concat([orders_df, new_order], ignore_index=True)
     orders_df.to_excel(ORDERS_DB, index=False)
     
-    # Update medicine stock
+
     for item in order_data["items"]:
         medicine_id = item["id"]
         quantity = item["quantity"]
         update_medicine_stock(medicine_id, quantity)
 
-# Navigation functions
+
 def navigate_to(page):
     st.session_state.current_page = page
 
-# Authentication functions
+
 def login():
     st.session_state.authenticated = False
     st.session_state.username = ""
@@ -217,7 +217,7 @@ def register():
         st.session_state.current_page = "login"
         st.rerun()
 
-# Cart functions
+
 def add_to_cart(medicine_id, quantity=1):
     medicines_df = load_medicines()
     medicine = medicines_df[medicines_df["id"] == medicine_id].iloc[0]
@@ -254,13 +254,12 @@ def calculate_cart_total():
 def clear_cart():
     st.session_state.cart = {}
 
-# Checkout function
 def process_checkout(address, payment_method):
     if not st.session_state.cart:
         st.error("Your cart is empty")
         return False
     
-    # Check if any item requires prescription
+
     prescription_items = [item["name"] for item_id, item in st.session_state.cart.items() 
                          if item["prescription_required"]]
     
@@ -268,7 +267,7 @@ def process_checkout(address, payment_method):
         st.error(f"Please upload prescription for: {', '.join(prescription_items)}")
         return False
     
-    # Process order
+
     order = {
         "order_id": f"ORD-{datetime.now().strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
         "username": st.session_state.username,
@@ -286,7 +285,7 @@ def process_checkout(address, payment_method):
         "status": "Processing"
     }
     
-    # Save order to Excel
+
     save_order(order)
     
     clear_cart()
@@ -313,7 +312,7 @@ def get_gemini_response(question):
     except Exception as e:
         return f"Sorry, I encountered an error: {str(e)}. Please try again later."
 
-# UI Components
+
 def show_header():
     col1, col2, col3 = st.columns([1, 3, 1])
     
@@ -360,7 +359,7 @@ def show_categories_sidebar():
     st.sidebar.divider()
     search_query = st.sidebar.text_input("Search medicines")
     
-    # Apply filters
+
     filtered_data = medicines_df.copy()
     
     if selected_category != "All":
@@ -391,8 +390,7 @@ def show_medicine_listing(filtered_medicines):
     if len(filtered_medicines) == 0:
         st.info("No medicines match your criteria")
         return
-    
-    # Display medicines in a grid
+
     cols_per_row = 3
     for i in range(0, len(filtered_medicines), cols_per_row):
         cols = st.columns(cols_per_row)
@@ -433,7 +431,7 @@ def show_cart_page():
         st.button("Continue Shopping", on_click=navigate_to, args=("home",))
         return
     
-    # Display cart items
+
     for medicine_id, item in st.session_state.cart.items():
         col1, col2, col3 = st.columns([3, 1, 1])
         
@@ -462,12 +460,12 @@ def show_cart_page():
         
         st.divider()
     
-    # Cart summary
+
     st.subheader("Order Summary")
     st.write(f"Total Items: {sum(item['quantity'] for item in st.session_state.cart.values())}")
     st.write(f"Total Amount: ${calculate_cart_total():.2f}")
     
-    # Check if any item requires prescription
+
     prescription_required = any(item["prescription_required"] for item in st.session_state.cart.values())
     
     if prescription_required:
@@ -479,7 +477,7 @@ def show_cart_page():
         else:
             st.session_state.prescription_uploaded = False
     
-    # Checkout form
+
     st.divider()
     st.subheader("Checkout")
     
@@ -517,17 +515,17 @@ def show_cart_page():
 def show_order_confirmation():
     st.header("Order Confirmation")
     
-    # Get the latest order for the current user
+
     user_orders = load_orders(st.session_state.username)
     
     if user_orders.empty:
         st.error("No order found!")
         return
     
-    # Get the most recent order
+
     order = user_orders.iloc[-1]
     
-    # Parse the items string back to a list-like structure
+
     items_str = order["items"]
     
     st.success(f"Order Placed Successfully! Order ID: {order['order_id']}")
@@ -560,7 +558,7 @@ def show_orders_page():
             st.rerun()
         return
     
-    # Display orders
+
     for i in range(len(user_orders)-1, -1, -1):
         order = user_orders.iloc[i]
         with st.expander(f"Order #{order['order_id']} - {order['date']}"):
@@ -574,7 +572,7 @@ def show_orders_page():
             st.write(f"Shipping Address: {order['address']}")
             st.write(f"Payment Method: {order['payment_method']}")
             
-            # Track order button (dummy)
+            
             if st.button("Track Order", key=f"track_{order['order_id']}"):
                 st.info("Tracking information: Your order is being processed and will be shipped soon.")
 
@@ -583,14 +581,14 @@ def show_chat_page():
     
     st.info("Ask any general medical questions, and our AI assistant will help you with information and guidance.")
     
-    # Display chat history
+    
     for message in st.session_state.chat_history:
         if message["role"] == "user":
             st.chat_message("user").write(message["content"])
         else:
             st.chat_message("assistant").write(message["content"])
     
-    # Chat input
+
     user_input = st.chat_input("Ask a medical question...")
     
     if user_input:
@@ -609,12 +607,12 @@ def show_chat_page():
         st.session_state.chat_history = []
         st.rerun()
 
-# Main app logic
+
 def main():
-    # Initialize Excel databases
+    
     initialize_excel_databases()
     
-    # Handle pages
+   
     if st.session_state.current_page == "login":
         login()
     elif st.session_state.current_page == "register":
@@ -623,7 +621,7 @@ def main():
         st.session_state.current_page = "login"
         st.rerun()
     else:
-        # Authenticated pages
+       
         show_header()
         
         if st.session_state.current_page == "home":
